@@ -6,9 +6,11 @@
 
 #include "mbed.h"
 #include "Stream.h"
+#include "../BMP280_SPI/BMP280_SPI.h"
 
 //#include <iostream>
 #include <chrono>
+#include <cstdint>
 #include <map>
 
 namespace uop_msb_200 {
@@ -54,6 +56,31 @@ namespace uop_msb_200 {
     #define LED_BLUE_LE_PIN PE_14
     #define LED_DIGIT_OE_PIN PE_15
 
+    // ANALOGUE
+    #define AN_POT_PIN  PA_0
+    #define MIC_AN_PIN  PA_3
+    #define DAC1_AN_PIN PA_4 
+    #define DAC2_AN_PIN PA_5
+    #define BNC_AN_PIN  PA_6
+    #define AN_LDR_PIN  PC_0
+    #define STEREO_LEFT_AN_PIN      PB_0
+    #define STEREO_RIGHT_AN_PIN     PB_1
+
+    // BMP280 Environmental Sensor
+    #define BMP280_MOSI_PIN PB_5
+    #define BMP280_MISO_PIN PB_4
+    #define BMP280_SCLK_PIN PB_3
+    #define BMP280_CS_PIN   PB_2
+
+    class EnvironmentalSensor : public BMP280_SPI
+    {
+        private:
+        public:
+        EnvironmentalSensor() : BMP280_SPI(BMP280_MOSI_PIN, BMP280_MISO_PIN, BMP280_SCLK_PIN, BMP280_CS_PIN) {
+            initialize();
+        }
+    };
+
     // *********
     // BUTTONS *
     // *********
@@ -65,11 +92,148 @@ namespace uop_msb_200 {
     class Buttons {
     public:
         Buttons(PinName b1 = BTN1_PIN, PinName b2 = BTN2_PIN, PinName b3 = BTN3_PIN, PinName b4 = BTN4_PIN, PinName buser = USER_BUTTON) :
-        Button1(b1), Button2(b2), Button3(b3), Button4(b4), BlueButton(buser)
-        {
+        Button1(b1), Button2(b2), Button3(b3, PullDown), Button4(b4, PullDown), BlueButton(buser) {
             
         }
         DigitalIn Button1, Button2, Button3, Button4, BlueButton;
+    };
+
+    class LatchedLED {
+        public:
+            typedef enum {STRIP, SEVEN_SEG} LEDMODE;   
+            typedef enum {TENS, UNITS, RED, GREEN, BLUE} LEDGROUP;     
+        private:
+            LEDMODE _mode;
+            LEDGROUP _grp;
+            BusOut dataBus;
+            DigitalOut LED_BAR_OE;
+            DigitalOut LED_DIGIT_OE;
+            DigitalOut LED_D1_LE;
+            DigitalOut LED_D2_LE;
+            DigitalOut LED_RED_LE;
+            DigitalOut LED_GRN_LE;
+            DigitalOut LED_BLUE_LE;     
+
+            // Returns the currently selected latch enable pin
+            DigitalOut& LE(LEDGROUP grp)
+            {
+                switch (grp) {
+                    case TENS:
+                    return LED_D1_LE;
+                    break;
+
+                    case UNITS:
+                    return LED_D2_LE;
+                    break;
+
+                    case RED:
+                    return LED_RED_LE;
+                    break;
+
+                    case GREEN:
+                    return LED_GRN_LE;
+                    break;
+
+                    case BLUE:
+                    return LED_BLUE_LE;
+                    break;
+                }
+            }
+
+
+            // Convert decimal to a 7-segment pattern
+            #define A  0x10
+            #define B  0x20
+            #define C  0x40
+            #define D  0x08
+            #define E  0x02
+            #define F  0x01
+            #define G  0x04
+            #define DP 0x80
+
+            uint8_t dec_to_7seg(uint8_t d)
+            {
+                switch(d){
+                    case 0: return(A+B+C+D+E+F);    break;
+                    case 1: return(B+C);            break;
+                    case 2: return(A+B+D+E+G);      break;
+                    case 3: return(A+B+C+D+G);      break;
+                    case 4: return(B+C+F+G);        break;
+                    case 5: return(A+C+D+F+G);      break;
+                    case 6: return(C+D+E+F+G);      break;
+                    case 7: return(A+B+C);          break;
+                    case 8: return(A+B+C+D+E+F+G);  break;
+                    case 9: return(A+B+C+D+F+G);    break;
+                    default: return DP;              break;
+                }            
+            }
+
+        public:
+            LatchedLED(LEDMODE mode, LEDGROUP grp=RED) :  _mode(mode), 
+                                        LED_BAR_OE(LED_BAR_OE_PIN,1),
+                                        LED_DIGIT_OE(LED_DIGIT_OE_PIN,1),
+                                        LED_D1_LE(LED_D1_LE_PIN,0),
+                                        LED_D2_LE(LED_D2_LE_PIN,0),
+                                        LED_RED_LE(LED_RED_LE_PIN),
+                                        LED_GRN_LE(LED_GRN_LE_PIN),
+                                        LED_BLUE_LE(LED_BLUE_LE_PIN),
+                                        _grp(grp),
+                                        dataBus(LED_D0_PIN, LED_D1_PIN, LED_D2_PIN, LED_D3_PIN, LED_D4_PIN, LED_D5_PIN, LED_D6_PIN, LED_D7_PIN)                             
+            {                                
+                //Further initialisation here 
+            }
+            ~LatchedLED() {
+                LED_BAR_OE = 1;
+                LED_DIGIT_OE = 1;
+                LED_D1_LE = 0;
+                LED_D2_LE = 0;
+            }
+
+            void enable(bool en)
+            {
+                switch (_mode) {
+                    case STRIP:
+                        LED_BAR_OE = en ? 0 : 1;
+                    break;
+                    case SEVEN_SEG:
+                        LED_DIGIT_OE = en ? 0  : 1;
+                        break;
+                }
+            }
+
+            void setGroup(LEDGROUP grp) {
+                _grp = grp;
+            }
+
+            void write(uint8_t dat) {
+                switch (_mode) {
+                    case STRIP:
+                        write(dat, _grp);
+                        break;
+                    case SEVEN_SEG:
+                        uint8_t units = dec_to_7seg(dat % 10);
+                        uint8_t tens  = dec_to_7seg(dat / 10);
+                        write(tens, TENS);
+                        write(units,UNITS);
+                        break;
+                }
+            }
+            void write(uint8_t dat, LEDGROUP grp) 
+            {
+                //Set data pins
+                dataBus = dat;
+                //Latch enable
+                wait_us(1);
+                LE(grp)=1;
+                wait_us(1);
+                LE(grp)=0;
+                wait_us(1);
+            }
+
+            void operator=(const uint8_t dat) {
+                write(dat);
+            }
+
     };
 
     // BUZZER
@@ -410,8 +574,6 @@ namespace uop_msb_200 {
         virtual int _getc() {
             return -1;
         }
-
-
     };
 
     // Mbed os 5 like Timer
