@@ -33,7 +33,7 @@ AnalogIn ldr(AN_LDR_PIN);
 EnvironmentalSensor sensor;
 
 //LCD Backlight - consider PwmOut for this :)
-DigitalOut backLight(LCD_BKL_PIN);
+PwmOut backLight(LCD_BKL_PIN);
 
 int main()
 {
@@ -66,14 +66,8 @@ int main()
             lcd.cls();                                                                                      //Clears the LCD screen.
             lcd.puts("DAY\n");                                                                              //Writes the string in the quotation marks to the LCD screen.
 
-            while (1) {
-
-                backLight = !backLight;
-                wait_us(10000);
-
-                break;
-
-            }
+            backLight.period(4.0f);
+            backLight.write(0.50f);
 
             break;                                                                                          //Breaks out of the while loop.
 
