@@ -214,4 +214,5 @@ BUILD\NUCLEO_F429ZI\ARMC6\main.o: main.cpp \
   mbed-os\platform\include\platform\mbed_stats.h \
   mbed-os\platform\include\platform\Stream.h \
   mbed-os\platform\include\platform\FileLike.h \
-  mbed-os\platform\include\platform\FileBase.h
+  mbed-os\platform\include\platform\FileBase.h \
+  ..\lib\BMP280_SPI\BMP280_SPI.h
