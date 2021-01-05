@@ -5,9 +5,9 @@
 using namespace uop_msb_200;
 
 //On board LEDs
-DigitalOut led1(LED1);
-DigitalOut led2(LED2);
-DigitalOut led3(LED3);
+DigitalOut led1(LED1, 0);
+DigitalOut led2(LED2, 0);
+DigitalOut led3(LED3, 0);
 
 //On board switch
 DigitalIn BlueButton(USER_BUTTON);
@@ -19,12 +19,9 @@ LCD_16X2_DISPLAY lcd;
 Buzzer buzz;
 
 //Traffic Lights
-DigitalOut trLED(TRAF_RED1_PIN);
-DigitalOut tyLED(TRAF_YEL1_PIN);
-PwmOut tgLED(TRAF_GRN1_PIN);
-DigitalOut rLED(TRAF_RED2_PIN);
-DigitalOut yLED(TRAF_YEL2_PIN);
-DigitalOut gLED(TRAF_GRN2_PIN);
+DigitalOut trLED(TRAF_RED1_PIN, 0);
+DigitalOut tyLED(TRAF_YEL1_PIN, 0);
+DigitalOut tgLED(TRAF_GRN1_PIN, 0);
 
 //Light Levels
 AnalogIn ldr(AN_LDR_PIN);
@@ -32,121 +29,111 @@ AnalogIn ldr(AN_LDR_PIN);
 //Environmental sensor
 EnvironmentalSensor sensor;
 
-//LCD Backlight - consider PwmOut for this :)
-PwmOut backLight(LCD_BKL_PIN);
-
 void rLEDFlash();
 void timer();
 
 int main() {
 
-    //LCD Backlight ON
-    backLight = 1;
+    float temperature, pressure;
+    temperature = sensor.getTemperature();
+    pressure = sensor.getPressure();
 
-    while (true) {
+    enum states {determine = 0, frost, cold, warm, hot};
+    int state = determine;
 
-        unsigned int lightVal = ldr.read_u16();                                                             //Unsigned int to range the values from 0 - 2^16, lightVal is registered with the values from the LDR.
-        int darkPercentage = 100 * (lightVal)/(1 << 16);                                                    //Integer specified to translate the raw value from the LDR into a percentage of darkness.
-        printf("darkPercentage == %d\n", darkPercentage);                                                   //Prints the value the darkness percentage to the serial monitor.
-        wait_us(1000000);                                                                                   //Waits for 0.5s to refresh the code.
+    while (1) {
 
+        unsigned int lightVal = ldr.read_u16();
+        int darkPercentage = 100 * (lightVal)/(65536);
 
-        float temperature, pressure;
-        temperature = sensor.getTemperature();
-        pressure = sensor.getPressure();
+        wait_us(100000);
+
         lcd.locate(1,0);
         lcd.printf("%.1fC, %.1fmB", temperature, pressure);
 
-        while (darkPercentage < 25) {                                                                       //This while loop runs while the light value is high.
+        switch (state) {
 
-            lcd.cls();                                                                                      //Clears the LCD screen.
-            lcd.puts("INTENSE\n");                                                                          //Writes the string in the quotation marks to the LCD screen.
+            case determine:
 
-            tgLED = 0;
+                if ((temperature > 0) && (temperature <= 10)) {
 
-            break;                                                                                          //Breaks out of the while loop.
+                    state = frost;
 
-        }                                                                                                   //End of the  1st while loop.
+                } else if ((temperature > 10) && (temperature <= 20)) {
 
-        while ((darkPercentage >= 25) && (darkPercentage < 50)) {                                           //This while loop runs while the light value is between high and mid-high.
+                    state = cold;
 
-            lcd.cls();                                                                                      //Clears the LCD screen.
-            lcd.printf("DAY\n");                                                                            //Writes the string in the quotation marks to the LCD screen.
+                } else if ((temperature > 20) && (temperature <= 24)) {
 
-            tgLED.period(2.0f);
-            tgLED.write(0.25f);
+                    state = warm;
 
-            break;                                                                                          //Breaks out of the while loop.
+                } else if ((temperature > 24) && (temperature <= 30)) {
 
-        }                                                                                                   //End of the 2nd while loop.
+                    state = hot;
 
-        while ((darkPercentage >= 50) && (darkPercentage < 75)) {                                           //This while loop runs while the light value is between mid-low and mid-high.
+                }
 
-            lcd.cls();                                                                                      //Clears the LCD screen.        
-            lcd.puts("LOW\n");                                                                              //Writes the string in the quotation marks to the LCD screen.
+                break;
 
-            tgLED.period(2.0f);
-            tgLED.write(0.25f);
+            case frost:
 
-            break;                                                                                          //Breaks out of the while loop.
+                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+                wait_us(10000000);
+                buzz.rest();
+                wait_us(10000000);
 
-        }                                                                                                   //End of the 3rd while loop.
+                temperature = sensor.getTemperature();
+                pressure = sensor.getPressure();
 
-        while (darkPercentage >= 75) {                                                                      //This while loop runs while the light value is low.
+                state = determine;
 
-            lcd.cls();                                                                                      //Clears the LCD screen.
-            lcd.puts("DARK\n");                                                                             //Writes the string in the quotation marks to the LCD screen.
+                break;
 
-            tgLED = 1;
+            case cold:
 
-            break;                                                                                          //Breaks out of the while loop.
+                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+                wait_us(5000000);
+                buzz.rest();
+                wait_us(5000000);
 
-        }                                                                                                   //End of the 4th while loop.
+                temperature = sensor.getTemperature();
+                pressure = sensor.getPressure();
 
-        if ((temperature > 0) && (temperature <= 10)) {
+                state = determine;
 
-            rLEDFlash();
+                break;
 
-            lcd.locate(1,0);
-            lcd.printf("%.1fC, %.1fmB", temperature, pressure);
-            
-        } else if ((temperature > 10) && (temperature <= 20)) {
+            case warm:
 
-            rLED = 1;
-            gLED = 0;
-            yLED = 0;
+                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+                wait_us(1000000);
+                buzz.rest();
+                wait_us(1000000);
 
-            lcd.locate(1,0);
-            lcd.printf("%.1fC, %.1fmB", temperature, pressure);
+                temperature = sensor.getTemperature();
+                pressure = sensor.getPressure();
 
-        } else if ((temperature > 20) && (temperature <= 30)) {
+                state = determine;
 
-            rLED = 0;
-            gLED = 0;
-            yLED = 1;
+                break;
 
-            lcd.locate(1,0);
-            lcd.printf("%.1fC, %.1fmB", temperature, pressure);
+            case hot:
 
-        } else if ((temperature > 30) && (temperature <= 40)) {
+                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+                wait_us(500000);
+                buzz.rest();
+                wait_us(500000);
 
-            rLED = 0;
-            gLED = 1;
-            yLED = 0;
+                temperature = sensor.getTemperature();
+                pressure = sensor.getPressure();
 
-            lcd.locate(1,0);
-            lcd.printf("%.1fC, %.1fmB", temperature, pressure);
+                state = determine;
 
-        } else {
+                break;
 
-            buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+
 
         }
-
-        rLED = 0;
-        gLED = 0;
-        yLED = 0;
-        buzz.rest();
         
     }
 
@@ -154,12 +141,9 @@ int main() {
 
 void rLEDFlash() {
 
-        rLED = !rLED;
-        buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+        buzz.playTone("D", Buzzer::HIGHER_OCTAVE);
         wait_us(500000);
 
-
-        rLED = !rLED;
         buzz.rest();
         wait_us(500000);
 
