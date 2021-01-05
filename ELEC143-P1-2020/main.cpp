@@ -48,7 +48,7 @@ int main()
 
         printf("darkPercentage == %d\n", darkPercentage);                                                   //Prints the value the darkness percentage to the serial monitor.
 
-        wait_us(50000);                                                                                    //Waits for 0.5s to refresh the code.
+        wait_us(1000000);                                                                                    //Waits for 0.5s to refresh the code.
 
         while (darkPercentage < 25) {                                                                       //This while loop runs while the light value is high.
 
@@ -64,7 +64,7 @@ int main()
         while ((darkPercentage >= 25) && (darkPercentage < 50)) {                                           //This while loop runs while the light value is between high and mid-high.
 
             lcd.cls();                                                                                      //Clears the LCD screen.
-            lcd.puts("DAY\n");                                                                              //Writes the string in the quotation marks to the LCD screen.
+            lcd.printf("DAY\n");                                                                              //Writes the string in the quotation marks to the LCD screen.
 
             backLight.period(4.0f);
             backLight.write(0.50f);
@@ -92,18 +92,16 @@ int main()
             break;                                                                                          //Breaks out of the while loop.
 
         }                                                                                                   //End of the 4th while loop.
- 
-        while (1) {
-
-            break;
-
-        }
 
 
         float temperature, pressure;
         temperature = sensor.getTemperature();
         pressure = sensor.getPressure();
 
-        printf("%.1fC %.1fmBar\n",temperature,pressure);     
+        lcd.locate(1,0);
+
+        lcd.printf("%.1f1C, %.1fmB", temperature, pressure);
+
+        //printf("%.1fC %.1fmBar\n",temperature,pressure);     
     }
 }
