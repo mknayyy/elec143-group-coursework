@@ -30,7 +30,7 @@ AnalogIn ldr(AN_LDR_PIN);
 EnvironmentalSensor sensor;
 
 void rLEDFlash();
-void timer();
+void frostWarning();
 
 int main() {
 
@@ -39,7 +39,9 @@ int main() {
     pressure = sensor.getPressure();
 
     enum states {determine = 0, frost, cold, warm, hot};
+    enum ldrstates {ldrdetermine = 0, dark, low, day, intense};
     int state = determine;
+    int ldrstates = ldrdetermine;
 
     while (1) {
 
@@ -48,12 +50,82 @@ int main() {
 
         wait_us(100000);
 
-        lcd.locate(1,0);
-        lcd.printf("%.1fC, %.1fmB", temperature, pressure);
+        /* switch (ldrstates) {
+
+            case ldrdetermine:
+
+
+                if (ldrPercentage <= 25) {
+
+                    ldrstates = intense;
+
+                } else if ((ldrPercentage <= 50) && (ldrPercentage > 25)) {
+
+                    ldrstates = day;
+
+                } else if ((ldrPercentage <= 75) && (ldrPercentage > 50)) {
+
+                    ldrstates = low;
+
+                } else if (ldrPercentage > 75) {
+
+                    ldrstates = dark;
+
+                } else {
+
+                    ldrstates = ldrdetermine;
+
+                }
+
+                break;
+
+            case intense:
+
+                lcd.printf("INTENSE");
+
+                ldrstates = ldrdetermine;
+
+                break;
+
+            case day:
+
+                lcd.printf("DAY");
+
+                ldrstates = ldrdetermine;
+
+                break;
+
+            case low:
+
+                lcd.printf("LOW");
+
+                ldrstates = ldrdetermine;
+
+                break;
+
+            case dark:
+
+                lcd.printf("DARK");
+
+                ldrstates = ldrdetermine;
+
+                break;
+
+        } */
 
         switch (state) {
 
             case determine:
+
+                temperature = sensor.getTemperature();
+                pressure = sensor.getPressure();
+
+                lcd.locate(1,0);
+                lcd.printf("%.1fC, %.1fmB", temperature, pressure);
+
+                trLED = 0;
+                tyLED = 0;
+                tgLED = 0;
 
                 if ((temperature > 0) && (temperature <= 10)) {
 
@@ -71,19 +143,24 @@ int main() {
 
                     state = hot;
 
+                } else {
+
+                    state = determine;
+
                 }
+
+                //float ldrValue = ldr.read_u16();
+                //float ldrPercentage = (ldrValue/65536) * 100;
+                //lcd.locate(0,0);
+                //printf("ldrPercentage = %.1f\n", ldrPercentage);
+
+                //if (())
 
                 break;
 
             case frost:
 
-                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
-                wait_us(10000000);
-                buzz.rest();
-                wait_us(10000000);
-
-                temperature = sensor.getTemperature();
-                pressure = sensor.getPressure();
+                frostWarning();
 
                 state = determine;
 
@@ -91,13 +168,7 @@ int main() {
 
             case cold:
 
-                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
-                wait_us(5000000);
-                buzz.rest();
-                wait_us(5000000);
-
-                temperature = sensor.getTemperature();
-                pressure = sensor.getPressure();
+                trLED = 1;
 
                 state = determine;
 
@@ -105,13 +176,7 @@ int main() {
 
             case warm:
 
-                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
-                wait_us(1000000);
-                buzz.rest();
-                wait_us(1000000);
-
-                temperature = sensor.getTemperature();
-                pressure = sensor.getPressure();
+                tyLED = 1;
 
                 state = determine;
 
@@ -119,19 +184,11 @@ int main() {
 
             case hot:
 
-                buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
-                wait_us(500000);
-                buzz.rest();
-                wait_us(500000);
-
-                temperature = sensor.getTemperature();
-                pressure = sensor.getPressure();
+                tgLED = 1;
 
                 state = determine;
 
                 break;
-
-
 
         }
         
@@ -149,12 +206,16 @@ void rLEDFlash() {
 
 }
 
-void timer() {
+void frostWarning() {
 
-    for (int count = 0; count < 3600; count++) {
+    buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
+    trLED = 1;
 
-        wait_us(1000000);
+    wait_us(1000000);
 
-    }
+    buzz.rest();
+    trLED = 0;
+
+    wait_us(1000000);
 
 }
