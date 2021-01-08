@@ -29,182 +29,149 @@ AnalogIn ldr(AN_LDR_PIN);
 //Environmental sensor
 EnvironmentalSensor sensor;
 
-void rLEDFlash();
 void frostWarning();
+
+float temperature = sensor.getTemperature();
+float pressure = sensor.getPressure();
+
 
 int main() {
 
-    float temperature, pressure;
-    temperature = sensor.getTemperature();
-    pressure = sensor.getPressure();
-
-    enum states {determine = 0, frost, cold, warm, hot};
-    enum ldrstates {ldrdetermine = 0, dark, low, day, intense};
-    int state = determine;
-    int ldrstates = ldrdetermine;
-
     while (1) {
 
-        unsigned int lightVal = ldr.read_u16();
-        int darkPercentage = 100 * (lightVal)/(65536);
+        while (temperature <= 0) {
 
-        wait_us(100000);
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
 
-        /* switch (ldrstates) {
+            lcd.locate(0,0);
+            lcd.printf("%.1fC %.1fmB  \n", temperature, pressure);
 
-            case ldrdetermine:
+            frostWarning();
 
-
-                if (ldrPercentage <= 25) {
-
-                    ldrstates = intense;
-
-                } else if ((ldrPercentage <= 50) && (ldrPercentage > 25)) {
-
-                    ldrstates = day;
-
-                } else if ((ldrPercentage <= 75) && (ldrPercentage > 50)) {
-
-                    ldrstates = low;
-
-                } else if (ldrPercentage > 75) {
-
-                    ldrstates = dark;
-
-                } else {
-
-                    ldrstates = ldrdetermine;
-
-                }
-
-                break;
-
-            case intense:
-
-                lcd.printf("INTENSE");
-
-                ldrstates = ldrdetermine;
-
-                break;
-
-            case day:
-
-                lcd.printf("DAY");
-
-                ldrstates = ldrdetermine;
-
-                break;
-
-            case low:
-
-                lcd.printf("LOW");
-
-                ldrstates = ldrdetermine;
-
-                break;
-
-            case dark:
-
-                lcd.printf("DARK");
-
-                ldrstates = ldrdetermine;
-
-                break;
-
-        } */
-
-        switch (state) {
-
-            case determine:
-
-                temperature = sensor.getTemperature();
-                pressure = sensor.getPressure();
-
-                lcd.locate(1,0);
-                lcd.printf("%.1fC, %.1fmB", temperature, pressure);
-
-                trLED = 0;
-                tyLED = 0;
-                tgLED = 0;
-
-                if ((temperature > 0) && (temperature <= 10)) {
-
-                    state = frost;
-
-                } else if ((temperature > 10) && (temperature <= 20)) {
-
-                    state = cold;
-
-                } else if ((temperature > 20) && (temperature <= 24)) {
-
-                    state = warm;
-
-                } else if ((temperature > 24) && (temperature <= 30)) {
-
-                    state = hot;
-
-                } else {
-
-                    state = determine;
-
-                }
-
-                //float ldrValue = ldr.read_u16();
-                //float ldrPercentage = (ldrValue/65536) * 100;
-                //lcd.locate(0,0);
-                //printf("ldrPercentage = %.1f\n", ldrPercentage);
-
-                //if (())
-
-                break;
-
-            case frost:
-
-                frostWarning();
-
-                state = determine;
-
-                break;
-
-            case cold:
-
-                trLED = 1;
-
-                state = determine;
-
-                break;
-
-            case warm:
-
-                tyLED = 1;
-
-                state = determine;
-
-                break;
-
-            case hot:
-
-                tgLED = 1;
-
-                state = determine;
-
-                break;
+            break;
 
         }
+
+        while ((temperature > 0) && (temperature <= 10)) {
+
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
+
+            lcd.locate(0,0);
+            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
+
+            frostWarning();
+
+            break;
+
+        } 
         
+        while ((temperature > 10) && (temperature <= 20)) {
+
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
+
+            lcd.locate(0,0);
+            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
+
+            break;
+
+        } 
+        
+        while ((temperature > 20) && (temperature <= 24)) {
+
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
+
+            lcd.locate(0,0);
+            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
+
+            break;
+
+        } 
+        
+        while ((temperature > 24) && (temperature <= 30)) {
+
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
+
+
+            lcd.locate(0,0);
+            lcd.printf("%.1fC, %.1fmB\n", temperature, pressure);
+
+            break;
+
+        }
+
+        while (temperature > 30) {
+
+            temperature = sensor.getTemperature();
+            pressure = sensor.getPressure();
+
+            lcd.locate(0,0);
+            lcd.printf("%.1fC, %.1fmB\n", temperature, pressure);
+
+            break;
+
+        }
+
+        unsigned int lightVal = ldr.read_u16();
+        int ldrPercentage = 100 * (lightVal)/(65536);
+
+        while (ldrPercentage > 75) {
+            
+            lcd.locate(1,0);
+            lcd.printf("DARK");
+
+            wait_us(10000);
+
+            break;
+
+        }
+
+        while ((ldrPercentage > 50) && (ldrPercentage <= 75)) {
+            
+            lcd.locate(1,0);
+            lcd.printf("LOW");
+
+            wait_us(10000);
+
+            break;
+
+        }
+
+        while ((ldrPercentage > 25) && (ldrPercentage <= 50)) {
+            
+            lcd.locate(1,0);
+            lcd.printf("DAY");
+
+            wait_us(10000);
+
+            break;
+
+        }
+
+        while ((ldrPercentage > 0) && (ldrPercentage <= 25)) {
+            
+            lcd.locate(1,0);
+            lcd.printf("INTENSE");
+
+            wait_us(10000);
+
+            break;
+
+        }
+
+        lcd.cls();
+
+        printf("%d\n", ldrPercentage);
+
     }
 
 }
 
-void rLEDFlash() {
 
-        buzz.playTone("D", Buzzer::HIGHER_OCTAVE);
-        wait_us(500000);
-
-        buzz.rest();
-        wait_us(500000);
-
-}
 
 void frostWarning() {
 
@@ -219,3 +186,29 @@ void frostWarning() {
     wait_us(1000000);
 
 }
+
+/*printf("%d\n", state);
+			wait_us(100000);
+			pressure = sensor.getPressure();
+            int p2 = pressure;
+			if (p1 == p2) {
+
+                state = stable;
+
+            } else if (p1 < p2) {
+
+                state = falling;
+
+            } else if (p1 < p2) {
+
+                state = rising;
+
+            } else {
+
+                state = determine;
+            }
+
+            break;
+
+            state = determine;
+            printf("%d\n", state); */
