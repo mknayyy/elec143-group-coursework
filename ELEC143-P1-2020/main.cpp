@@ -1,214 +1,247 @@
-#include "mbed.h"
-#include "../lib/uopmsb/uop_msb_2_0_0.h"
-#include "BMP280_SPI.h"
+#include "mbed.h"                                                                                   //Includes mbed.h to use certain functions in the code below.
+#include "../lib/uopmsb/uop_msb_2_0_0.h"                                                            //Includes the library to use the uop module  support board.
+#include "BMP280_SPI.h"                                                                             //Library in order to use the BMP280 temperature and pressure sensor.
+#include <cstdarg>                                                                                  //JUDE/JOSH.
+#include <string>                                                                                   //JUDE/JOSH.
 
-using namespace uop_msb_200;
+using namespace uop_msb_200;                                                                        //Similar function to the above, allows the code to communicate with the uop support board.
 
 //On board LEDs
-DigitalOut led1(LED1, 0);
-DigitalOut led2(LED2, 0);
-DigitalOut led3(LED3, 0);
+PwmOut led1(LED1);                                                                                  //Uses the led on the nucleo board, this is used to control the PWM that would be normally used as the LCD backlight.
+DigitalOut led2(LED2, 0);                                                                           //Uses the led on the nucleo board, this is from the template.
+DigitalOut led3(LED3, 0);                                                                           //Uses the led on the nucleo board, this is from the template.
 
 //On board switch
-DigitalIn BlueButton(USER_BUTTON);
+DigitalIn BlueButton(USER_BUTTON);                                                                  //Uses the blue button on the nucleo board, this is from the template.
 
 //LCD Display
-LCD_16X2_DISPLAY lcd;
+LCD_16X2_DISPLAY lcd;                                                                               //Initialises the LCD, in order to print characters onto it.
 
 //Buzzer
-Buzzer buzz;
+Buzzer buzz;                                                                                        //Initialises the buzzer, in order to be used later on in the code.
 
 //Traffic Lights
-DigitalOut trLED(TRAF_RED1_PIN, 0);
-DigitalOut tyLED(TRAF_YEL1_PIN, 0);
-DigitalOut tgLED(TRAF_GRN1_PIN, 0);
+DigitalOut trLED(TRAF_RED1_PIN, 0);                                                                 //Red traffic light initialised, it's set to 0 as this will cause it to be off by default.
+DigitalOut tyLED(TRAF_YEL1_PIN, 0);                                                                 //Yellow traffic light initialised, it's set to 0 as this will cause it to be off by default.
+DigitalOut tgLED(TRAF_GRN1_PIN, 0);                                                                 //Green traffic light initialised, it's set to 0 as this will cause it to be off by default.
 
 //Light Levels
-AnalogIn ldr(AN_LDR_PIN);
+AnalogIn ldr(AN_LDR_PIN);                                                                           //Used to initialise the analogue in of the LDR, to be used later in the code.
 
 //Environmental sensor
-EnvironmentalSensor sensor;
+EnvironmentalSensor sensor;                                                                         //Referencing the BMP280 library in order to use functions in order to call either the temperature or pressure, whichever is needed.
 
-void frostWarning();
+void frostWarning();                                                                                //Initialises the void loop, found at the bottom of the code to signal the frost warning to play.
 
-float temperature = sensor.getTemperature();
-float pressure = sensor.getPressure();
+float temperature = sensor.getTemperature();                                                        //Used in order to be set as a global variable, of the temperature that we can easily call if need be.
+float pressure = sensor.getPressure();                                                              //Used in order to be set as a global variable, of the pressure that we can easily call if need be.
+float pressure2 = sensor.getPressure();                                                             //JUDE/JOSH.
+int riskofrain = 0;                                                                                 //JUDE/JOSH.
+
+int main()                                                                                          //Int main initialises, so a code may be written.
+
+{                                                                                                   //Beginning of the int main.
+
+    while (1)                                                                                       //While loop, in order to check the code constantly for updates.
+
+    {                                                                                               //Beginning of the main while loop.
+
+        tgLED = 0;                                                                                  //Sets the corresponding traffic light to turn off, otherwise the light would stay on permenantely.
+        trLED = 0;                                                                                  //Sets the corresponding traffic light to turn off, otherwise the light would stay on permenantely.
+        tyLED = 0;                                                                                  //Sets the corresponding traffic light to turn off, otherwise the light would stay on permenantely.
+
+        float tempArray[100];                                                                       //Initialises the temperature array with size of 100, this is to store the values of the temperature, to be used later.
+        float totalArray = 0;                                                                       //Initialised float in order to store the total value of the temparray.
+
+        for (int count = 0; count < 100; count++) {                                                 //For loop, to iterate through each of the values of the temp array, and call a new temperature to be stored in the array.
+
+            tempArray[count] = sensor.getTemperature();                                             //For each iteration of count (1 - 100), the array is then stored with the called temperature. 
+
+            totalArray = totalArray + tempArray[count];                                             //Simply adds all the values in the array to the totalArray float.
+
+        }                                                                                           //End of the for loop.
+
+        float finishedArray = (totalArray / 100);                                                   //Finished array here is calculated by dividing the totalArray by 100, in order to get a mean average of the values called.
+
+        lcd.cls();                                                                                  //Clears the LCD before the bulk of the code begins in order to refresh the values.
+
+        pressure = sensor.getPressure();                                                            //JUDES CODE.
+
+        if ((pressure + 0.1) < pressure2)                                                           //JUDES CODE.
+            {                                                                                       //JUDES CODE.
+                lcd.locate(0,8);                                                                    //JUDES CODE.
+                lcd.printf("Rising\n");                                                             //JUDES CODE.
+                riskofrain = 0;                                                                     //JUDES CODE.
+            }                                                                                       //JUDES CODE.
+        else if ((pressure - 0.1) > pressure2)                                                      //JUDES CODE.
+            {                                                                                       //JUDES CODE.
+                lcd.locate(0,8);                                                                    //JUDES CODE.
+                lcd.printf("Falling\n");                                                            //JUDES CODE.
+                riskofrain ++;                                                                      //JUDES CODE.
+            }                                                                                       //JUDES CODE.
+        else                                                                                        //JUDES CODE.
+            {                                                                                       //JUDES CODE.
+                lcd.locate(0,8);                                                                    //JUDES CODE.
+                lcd.printf("Stable\n");                                                             //JUDES CODE.
+                riskofrain = 0;                                                                     //JUDES CODE.
+            }                                                                                       //JUDES CODE.
 
 
-int main() {
+        while (finishedArray <= 0) {                                                                //Simply a catch all while loop to continute to spit out a frost warning for values below 0.                                                    
 
-    while (1) {
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
-        while (temperature <= 0) {
+            frostWarning();                                                                         //Runs the void loop at the bottom of the code, to buzz a warning sound and flash a warning light.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-            lcd.locate(0,0);
-            lcd.printf("%.1fC %.1fmB  \n", temperature, pressure);
+        }                                                                                           //End of the above while loop.
 
-            frostWarning();
+        while ((finishedArray > 0) && (finishedArray <= 10.2)) {                                    //While loop to run between 0c and 10.2c.
 
-            break;
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
-        }
+            frostWarning();                                                                         //Runs the void loop at the bottom of the code, to buzz a warning sound and flash a warning light.
 
-        while ((temperature > 0) && (temperature <= 10)) {
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
-
-            lcd.locate(0,0);
-            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
-
-            frostWarning();
-
-            break;
-
-        } 
+        }                                                                                           //End of the above while loop.
         
-        while ((temperature > 10) && (temperature <= 20)) {
+        while ((finishedArray > 8.8) && (finishedArray <= 20.2)) {                                  //While loop to run between 8.8c and 20.2c.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
-            lcd.locate(0,0);
-            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
+            trLED = 1;                                                                              //Toggles the red LED to ON, while this loop statement is true.     
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        } 
+        }                                                                                           //End of the above while loop.
         
-        while ((temperature > 20) && (temperature <= 24)) {
+        while ((finishedArray > 19.8) && (finishedArray <= 26.2)) {                                 //While loop to run between 19.2c and 26.2c.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
-            lcd.locate(0,0);
-            lcd.printf("%.1fC, %.1fmB  \n", temperature, pressure);
+            tyLED = 1;                                                                              //Toggles the yellow LED to ON, while this loop statement is true.
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        } 
+        }                                                                                           //End of the above while loop.
         
-        while ((temperature > 24) && (temperature <= 30)) {
+        while ((finishedArray > 25.8) && (finishedArray <= 30)) {                                   //While loop to run between 25.8c and 30c.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
+            tgLED = 1;                                                                              //Toggles the green LED to ON, while this loop statement is true.
 
-            lcd.locate(0,0);
-            lcd.printf("%.1fC, %.1fmB\n", temperature, pressure);
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-            break;
+        }                                                                                           //End of the above while loop.
 
-        }
+        while (finishedArray > 30) {                                                                //Simply a catch all while loop to continue to give a green LED for temps above 30.
 
-        while (temperature > 30) {
+            lcd.locate(0,0);                                                                        //Locates the 0th row of the 0th collumn in order to print on.
+            lcd.printf("%.1fC\n", finishedArray);                                                   //Prints the value of the temperature to the LCD screen.
 
-            temperature = sensor.getTemperature();
-            pressure = sensor.getPressure();
+            tgLED = 1;                                                                              //Toggles the green LED to ON, while this loop statement is true.
 
-            lcd.locate(0,0);
-            lcd.printf("%.1fC, %.1fmB\n", temperature, pressure);
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-            break;
+        }                                                                                           //End of the above while loop.
 
-        }
+        float lightArray[100];                                                                      //Initialises the lightArray with 100 values to be filled in with values called from the for loop.
+        float totalLDRArray = 0;                                                                    //Initialises the store for the total value of the lightarray.
 
-        unsigned int lightVal = ldr.read_u16();
-        int ldrPercentage = 100 * (lightVal)/(65536);
+        for (int count = 0; count < 100; count++) {                                                 //For loop to iterate through each array value.
 
-        while (ldrPercentage > 75) {
+            lightArray[count] = ldr.read_u16();                                                     //Stores the lightArray with a value, from ldr.read at that exact point, storing multiple values.
+
+            totalLDRArray = totalLDRArray + lightArray[count];                                      //Simply adds each array value to a total number.
+
+        }                                                                                           //End of the for loop.
+
+        float ldrtoperc = 100 * ((totalLDRArray)/(65536));                                          //Initialised value to convert the values we recieved, into a percentage. Though this percentage is multiplied by a factor of 100, which we deal with underneath this line.
+
+        float finishedLDRArray = (ldrtoperc / 100);                                                 //This simply divides the total value from the previous line by 100, putting it into a percentage of 'darkness',  this is now a useable factor.
+
+        while (finishedLDRArray > 73) {                                                             //While loop to act  as a catch all, for values above and exceeding 73%.
             
-            lcd.locate(1,0);
-            lcd.printf("DARK");
+            lcd.locate(1,0);                                                                        //Locates the location of the LCD, to the 1st row of the 0th column.
+            lcd.printf("DARK");                                                                     //Prints the words in the "" to the LCD screen on the 1st row of the 0th column.
 
-            wait_us(10000);
+            led1 = 1;                                                                               //The led (backlight) is set to 1 in order to clearly display the value that is printed on the LCD screen.
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        }
+        }                                                                                           //End of the above while loop.
 
-        while ((ldrPercentage > 50) && (ldrPercentage <= 75)) {
+        while ((finishedLDRArray > 48) && (finishedLDRArray <= 77)) {                               //While loop to run while the values range from 48% to 77%.
             
-            lcd.locate(1,0);
-            lcd.printf("LOW");
+            lcd.locate(1,0);                                                                        //Locates the location of the LCD, to the 1st row of the 0th column.
+            lcd.printf("LOW");                                                                      //Prints the words in the "" to the LCD screen on the 1st row of the 0th column.
 
-            wait_us(10000);
+            led1.period(0.03f);                                                                     //Relating to PWM, this gives a period of 30ms.
+            led1.pulsewidth(0.005);                                                                 //Relating to PWM, this determines the frequency of the pulse of on and off (5ms).
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        }
+        }                                                                                           //End of the above while loop.
 
-        while ((ldrPercentage > 25) && (ldrPercentage <= 50)) {
+        while ((finishedLDRArray > 23) && (finishedLDRArray <= 52)) {                               //While loop to run while the values range from 23% to 52%.
             
-            lcd.locate(1,0);
-            lcd.printf("DAY");
+            lcd.locate(1,0);                                                                        //Locates the location of the LCD, to the 1st row of the 0th column.
+            lcd.printf("DAY");                                                                      //Prints the words in the "" to the LCD screen on the 1st row of the 0th column.
 
-            wait_us(10000);
+            led1.period(0.03f);                                                                     //Relating to PWM, this gives a period of 30ms.
+            led1.pulsewidth(0.005);                                                                 //Relating to PWM, this determines the frequency of the pulse of on and off (5ms).
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        }
+        }                                                                                           //End of the above while loop.
 
-        while ((ldrPercentage > 0) && (ldrPercentage <= 25)) {
+        while ((finishedLDRArray > 0) && (finishedLDRArray <= 27)) {                                //While loop to run while the values range from 0% to 27%.
             
-            lcd.locate(1,0);
-            lcd.printf("INTENSE");
+            lcd.locate(1,0);                                                                        //Locates the location of the LCD, to the 1st row of the 0th column.
+            lcd.printf("INTENSE");                                                                  //Prints the words in the "" to the LCD screen on the 1st row of the 0th column.
 
-            wait_us(10000);
+            led1 = 0;                                                                               //The led (backlight) is set to 0 in order to save energy in daylight.
 
-            break;
+            break;                                                                                  //Breaks out of the while loop, otherwise the code would run forever.
 
-        }
+        }                                                                                           //End of the above while loop.
 
-        lcd.cls();
+        pressure2 = sensor.getPressure();                                                           //JUDE/JOSH.
+        wait_us(500000);                                                                            //JUDE/JOSH.
+        if (riskofrain >= 2)                                                                        //JUDE/JOSH.
+            {                                                                                       //JUDE/JOSH.
+                lcd.locate(0,6);                                                                    //JUDE/JOSH.
+                lcd.printf("  RAIN!  ");                                                            //JUDE/JOSH.
+                wait_us(2000000);                                                                   //JUDE/JOSH.
+            }                                                                                       //JUDE/JOSH.
+        else                                                                                        //JUDE/JOSH.
+        {                                                                                           //JUDE/JOSH.
+                                                                                                    //JUDE/JOSH.
+        }                                                                                           //JUDE/JOSH.
 
-        printf("%d\n", ldrPercentage);
+    }                                                                                               //End of the main while loop inside int main.
 
-    }
-
-}
+}                                                                                                   //End of int main.
 
 
+void frostWarning() {                                                                               //The void loop produced in order to make the code look just a bit neater.
 
-void frostWarning() {
+    buzz.playTone("A", Buzzer::HIGHER_OCTAVE);                                                      //Buzzes the buzzer to play a tone of A at the highest octave.
+    trLED = 1;                                                                                      //Turns the red traffic light on.
 
-    buzz.playTone("A", Buzzer::HIGHER_OCTAVE);
-    trLED = 1;
+    wait_us(1000000);                                                                               //Allows the buzzer to play for a set amount of time (1s).
 
-    wait_us(1000000);
+    buzz.rest();                                                                                    //Tells the buzzer to rest, ie, turn off.
+    trLED = 0;                                                                                      //Turns the red traffic light off.
 
-    buzz.rest();
-    trLED = 0;
+    wait_us(1000000);                                                                               //A wait signal is given to allow there to be space between each buzz, 1s on, 1s off.
 
-    wait_us(1000000);
-
-}
-
-/*printf("%d\n", state);
-			wait_us(100000);
-			pressure = sensor.getPressure();
-            int p2 = pressure;
-			if (p1 == p2) {
-
-                state = stable;
-
-            } else if (p1 < p2) {
-
-                state = falling;
-
-            } else if (p1 < p2) {
-
-                state = rising;
-
-            } else {
-
-                state = determine;
-            }
-
-            break;
-
-            state = determine;
-            printf("%d\n", state); */
+}                                                                                                   //End of the void function.
