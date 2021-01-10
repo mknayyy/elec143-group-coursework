@@ -1,8 +1,8 @@
 #include "mbed.h"                                                                                   //Includes mbed.h to use certain functions in the code below.
 #include "../lib/uopmsb/uop_msb_2_0_0.h"                                                            //Includes the library to use the uop module  support board.
 #include "BMP280_SPI.h"                                                                             //Library in order to use the BMP280 temperature and pressure sensor.
-#include <cstdarg>                                                                                  //JUDE/JOSH.
-#include <string>                                                                                   //JUDE/JOSH.
+#include <cstdarg>                                                                                  //Library to reference the corresponding functions seen below in the code.
+#include <string>                                                                                   //Gives the ability to use strings within the code.
 
 using namespace uop_msb_200;                                                                        //Similar function to the above, allows the code to communicate with the uop support board.
 
@@ -35,8 +35,8 @@ void frostWarning();                                                            
 
 float temperature = sensor.getTemperature();                                                        //Used in order to be set as a global variable, of the temperature that we can easily call if need be.
 float pressure = sensor.getPressure();                                                              //Used in order to be set as a global variable, of the pressure that we can easily call if need be.
-float pressure2 = sensor.getPressure();                                                             //JUDE/JOSH.
-int riskofrain = 0;                                                                                 //JUDE/JOSH.
+float pressure2 = sensor.getPressure();                                                             //Used in order to be set as a global variable, of the second pressure value that we can easily call if need be.
+int riskofrain = 0;                                                                                 //Used in order to be set as a global variable, of the rain testing system that we can easily call if need be.
 
 int main()                                                                                          //Int main initialises, so a code may be written.
 
@@ -65,26 +65,26 @@ int main()                                                                      
 
         lcd.cls();                                                                                  //Clears the LCD before the bulk of the code begins in order to refresh the values.
 
-        pressure = sensor.getPressure();                                                            //JUDES CODE.
+        pressure = sensor.getPressure();                                                            //Gets the value of 'pressure' from the pressure sensor.
 
-        if ((pressure + 0.1) < pressure2)                                                           //JUDES CODE.
-            {                                                                                       //JUDES CODE.
-                lcd.locate(0,8);                                                                    //JUDES CODE.
-                lcd.printf("Rising\n");                                                             //JUDES CODE.
-                riskofrain = 0;                                                                     //JUDES CODE.
-            }                                                                                       //JUDES CODE.
-        else if ((pressure - 0.1) > pressure2)                                                      //JUDES CODE.
-            {                                                                                       //JUDES CODE.
-                lcd.locate(0,8);                                                                    //JUDES CODE.
-                lcd.printf("Falling\n");                                                            //JUDES CODE.
-                riskofrain ++;                                                                      //JUDES CODE.
-            }                                                                                       //JUDES CODE.
-        else                                                                                        //JUDES CODE.
-            {                                                                                       //JUDES CODE.
-                lcd.locate(0,8);                                                                    //JUDES CODE.
-                lcd.printf("Stable\n");                                                             //JUDES CODE.
-                riskofrain = 0;                                                                     //JUDES CODE.
-            }                                                                                       //JUDES CODE.
+        if ((pressure + 0.1) < pressure2)                                                           //Compares the two pressure values in 'pressure' and 'pressure2', if the value of 'pressure2' is higher than 'pressure' (with 0.1 added) then continue with if statment.
+            {                                                                                       
+                lcd.locate(0,8);                                                                    //Locates the 0th row of the 8th collumn in order to print on.
+                lcd.printf("Rising\n");                                                             //Prints "Rising" to the lcd screen.
+                riskofrain = 0;                                                                     //Makes the value of 'riskofrain' 0.
+            }                                                                                       
+        else if ((pressure - 0.1) > pressure2)                                                      //Compares the two pressure values in 'pressure' and 'pressure2', if the value of 'pressure2' is lower than 'pressure' (with 0.1 taken away) then continue with the else if statment.
+            {                                                                                      
+                lcd.locate(0,8);                                                                    //Locates the 0th row of the 8th collumn in order to print on.
+                lcd.printf("Falling\n");                                                            //Prints "Falling" to the lcd screen.
+                riskofrain ++;                                                                      //Adds one to the value of 'riskofrain'.
+            }                                                                                       
+        else                                                                                        //In the event that the if and else if statements are flase, continue with whats inside the else statement.
+            {                                                                                       
+                lcd.locate(0,8);                                                                    //Locates the 0th row of the 8th collumn in order to print on.
+                lcd.printf("Stable\n");                                                             //Prints "Stable" to the lcd screen.
+                riskofrain = 0;                                                                     //makes the value of 'riskofrain' 0.
+            }                                                                                       
 
 
         while (finishedArray <= 0) {                                                                //Simply a catch all while loop to continute to spit out a frost warning for values below 0.                                                    
@@ -214,18 +214,18 @@ int main()                                                                      
 
         }                                                                                           //End of the above while loop.
 
-        pressure2 = sensor.getPressure();                                                           //JUDE/JOSH.
-        wait_us(500000);                                                                            //JUDE/JOSH.
-        if (riskofrain >= 2)                                                                        //JUDE/JOSH.
-            {                                                                                       //JUDE/JOSH.
-                lcd.locate(0,6);                                                                    //JUDE/JOSH.
-                lcd.printf("  RAIN!  ");                                                            //JUDE/JOSH.
-                wait_us(2000000);                                                                   //JUDE/JOSH.
-            }                                                                                       //JUDE/JOSH.
-        else                                                                                        //JUDE/JOSH.
-        {                                                                                           //JUDE/JOSH.
-                                                                                                    //JUDE/JOSH.
-        }                                                                                           //JUDE/JOSH.
+        pressure2 = sensor.getPressure();                                                           //Gets the value of 'pressure' from the pressure sensor.
+        wait_us(500000);                                                                            //Waits for half a second.
+        if (riskofrain >= 2)                                                                        //If the value of 'riskofrain' is more than or equal to the value of 2 then continue with the if statement.
+            {                                                                                      
+                lcd.locate(0,6);                                                                    //Locates the 0th row of the 6th collumn in order to print on.
+                lcd.printf("  RAIN!  ");                                                            //Prints "RAIN!" to the lcd screen. (dramatic but needed).
+                wait_us(2000000);                                                                   //Waits for 2 seconds.
+            }                                                                                       
+        else                                                                                        //This else statement has no purpose other than to close the if statement.
+        {                                                                                           
+                                                                                                
+        }                                                                                          
 
     }                                                                                               //End of the main while loop inside int main.
 
